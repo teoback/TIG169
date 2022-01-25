@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'apistuff.dart';
 
 void main() {
+  var state = ListanproviderState();
+  state.visaLista;
   runApp(ChangeNotifierProvider(
       create: (context) => ListanproviderState(), child: const MyApp()));
 }
