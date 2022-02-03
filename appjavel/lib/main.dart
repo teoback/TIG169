@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'apistuff.dart';
 
 void main() {
+  var state = ListanproviderState();
+  state.visaLista;
   runApp(ChangeNotifierProvider(
       create: (context) => ListanproviderState(), child: const MyApp()));
 }
@@ -22,9 +24,14 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
 
+  @override
+  _HomePageState createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -34,7 +41,7 @@ class HomePage extends StatelessWidget {
             PopupMenuButton(
                 onSelected: (value) {
                   Provider.of<ListanproviderState>(context, listen: false)
-                      .setFilterBy(value!);
+                      .setFilter(value!);
                 },
                 itemBuilder: (context) => [
                       const PopupMenuItem(
@@ -53,15 +60,17 @@ class HomePage extends StatelessWidget {
           ],
         ),
         body: Consumer<ListanproviderState>(
-            builder: (context, state, child) =>
-                Listan(_filterList(state.list, state.filterBy))),
+            builder: (context, state, child) => Listan(
+                  _filterList(state.list, state._filterBy),
+                )),
         floatingActionButton: FloatingActionButton(
           child: const Icon(Icons.add, size: 40.0),
           onPressed: () async {
             var nyAkt = await Navigator.push(
                 context,
                 MaterialPageRoute(
-                    builder: (context) => SecondView(ListSpec(title: ''))));
+                    builder: (context) =>
+                        SecondView(ListSpec(title: '', id: '', done: false))));
 
             if (nyAkt != null) {
               Provider.of<ListanproviderState>(context, listen: false)
@@ -130,7 +139,7 @@ class _SecondViewState extends State<SecondView> {
                 ),
               ),
               ElevatedButton(
-                child: Text('Lägg till'),
+                child: const Text('Lägg till'),
                 style: ElevatedButton.styleFrom(),
                 onPressed: () {
                   if (textEditingController.text.isEmpty) {
@@ -139,6 +148,7 @@ class _SecondViewState extends State<SecondView> {
                         context,
                         ListSpec(
                           title: title,
+                          id: '',
                         ));
                   }
                 },
@@ -166,13 +176,14 @@ class _ListanState extends State<Listan> {
   }
 
   Widget _toDoItem(item, context) {
-    //hur en todo ser ut och visas
     return ListTile(
       leading: Checkbox(
         value: item.done,
         onChanged: (bool? value) {
           setState(() {
             item.done = value!;
+            Provider.of<ListanproviderState>(context, listen: false)
+                .klar(item, value);
           });
         },
       ),
@@ -193,29 +204,36 @@ class _ListanState extends State<Listan> {
 }
 
 class ListSpec {
-  //  spec for todo item grej
   String title;
   bool done;
+  String id;
 
-  ListSpec({required this.title, this.done = false});
+  ListSpec({required this.title, required this.id, this.done = false});
 
   static Map<String, dynamic> toJson(ListSpec item) {
-    return {'title': item.title, 'done': item.done};
+    return {'title': item.title, 'done': item.done, 'id': item.id};
   }
 
   static ListSpec fromJson(Map<String, dynamic> json) {
-    return ListSpec(title: json['title'], done: json['done']);
+    return ListSpec(
+      title: json['title'],
+      done: json['done'],
+      id: json['id'],
+    );
   }
 }
 
 class ListanproviderState extends ChangeNotifier {
-  //Filtrera, ta bort och lägg till
-  List<ListSpec> _list = [];
+  late List<ListSpec> _list = [];
   Object _filterBy = 'Alla';
-
   List<ListSpec> get list => _list;
-
   Object get filterBy => _filterBy;
+
+  Future visaLista() async {
+    List<ListSpec> list = await apiGrejer.getItem();
+    _list = list;
+    notifyListeners();
+  }
 
   void nyItem(ListSpec item) async {
     _list = await apiGrejer.nyItem(item);
@@ -224,13 +242,19 @@ class ListanproviderState extends ChangeNotifier {
   }
 
   void removeItem(ListSpec item) async {
-    _list = await apiGrejer.removeItem(item.title);
+    _list = await apiGrejer.removeItem(item.id);
     //_list.remove(item);         Gammal
     notifyListeners();
   }
 
-  void setFilterBy(Object filterBy) {
+  void setFilter(Object filterBy) {
     _filterBy = filterBy;
+    notifyListeners();
+  }
+
+  void klar(ListSpec item, value) async {
+    item.done = !item.done;
+    await apiGrejer.updateItem(item, value);
     notifyListeners();
   }
 }

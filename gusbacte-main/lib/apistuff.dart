@@ -42,7 +42,7 @@ class apiGrejer {
     }).toList();
   }
 
-  static Future updateList(ListSpec item, value) async {
+  static Future updateItem(ListSpec item, value) async {
     String itemID = item.id;
     item.done = value;
     Map<String, dynamic> json = ListSpec.toJson(item);

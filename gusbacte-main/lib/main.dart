@@ -83,8 +83,10 @@ class _HomePageState extends State<HomePage> {
       return list.where((item) => item.done == true).toList();
     } else if (filterBy == 3) {
       return list.where((item) => item.done == false).toList();
-    }
-    return list;
+    } else if (filterBy == 1) {
+      return list;
+    } else
+      return list;
   }
 }
 
@@ -179,6 +181,8 @@ class _ListanState extends State<Listan> {
         onChanged: (bool? value) {
           setState(() {
             item.done = value!;
+            Provider.of<ListanproviderState>(context, listen: false)
+                .klar(item, value);
           });
         },
       ),
@@ -249,7 +253,7 @@ class ListanproviderState extends ChangeNotifier {
 
   void klar(ListSpec item, value) async {
     item.done = !item.done;
-    await apiGrejer.updateList(item, value);
+    await apiGrejer.updateItem(item, value);
     notifyListeners();
   }
 }

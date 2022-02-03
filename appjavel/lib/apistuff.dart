@@ -23,9 +23,9 @@ class apiGrejer {
     }).toList();
   }
 
-  static Future removeItem(String title) async {
-    var svar =
-        await http.delete(Uri.parse('$API_URL/todos/$title?key=$API_KEY'));
+  static Future removeItem(String id) async {
+    var svar = await http
+        .delete(Uri.parse('$API_URL/todos/$id?key=$API_KEY&_confirm=true'));
     var bodyText = svar.body;
     var list = jsonDecode(bodyText);
     return list.map<ListSpec>((data) {
@@ -33,12 +33,24 @@ class apiGrejer {
     }).toList();
   }
 
-  static Future<List<Listan>> getItem() async {
+  static Future<List<ListSpec>> getItem() async {
     var svar = await http.get(Uri.parse('$API_URL/todos?key=$API_KEY'));
     String bodyText = svar.body;
     var json = jsonDecode(bodyText);
     return json.map<ListSpec>((data) {
       return ListSpec.fromJson(data);
     }).toList();
+  }
+
+  static Future updateItem(ListSpec item, value) async {
+    String itemID = item.id;
+    item.done = value;
+    Map<String, dynamic> json = ListSpec.toJson(item);
+    var bodyString = jsonEncode(json);
+    await http.put(
+      Uri.parse('$API_URL/todos/$itemID?key=$API_KEY'),
+      body: bodyString,
+      headers: {'Content-Type': 'application/json'},
+    );
   }
 }
